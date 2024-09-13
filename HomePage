@@ -1,0 +1,221 @@
+import axios from "axios";
+import { useState, KeyboardEvent, useCallback } from "react";
+import { useCookies } from "react-cookie";
+import { useNavigate } from "react-router-dom";
+import { LoadScript, Autocomplete } from "@react-google-maps/api";
+import { Box, LinearProgress, Typography, Grid } from "@mui/material";
+
+function LinearProgressWithLabel(props: { value: number }) {
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+      <Box sx={{ width: "100%", mr: 1 }}>
+        <LinearProgress
+          variant="determinate"
+          {...props}
+          sx={{ height: "10px" }}
+        />
+      </Box>
+      <Box sx={{ minWidth: 35 }}>
+        <Typography variant="body2" color="text.secondary">{`${Math.round(
+          props.value
+        )}%`}</Typography>
+      </Box>
+    </Box>
+  );
+}
+
+const libraries: "places"[] = ["places"];
+
+const Home = () => {
+  const navigate = useNavigate();
+  const [, setCookie] = useCookies();
+  const API_ENDPOINT = process.env.REACT_APP_BACKEND_API_URL;
+  const GOOGLE_MAP_KEY = process.env.REACT_APP_GOOGLE_MAP_API_KEY as string;
+
+  const [curType, setCurType] = useState(0);
+  const [itemsToShow, setItemsToShow] = useState(6);
+  const [curSearchLegislator, setCurSearchLegislator] = useState("");
+  const [curSearchMember, setCurSearchMember] = useState("");
+  const [curSearchBill, setCurSearchBill] = useState("");
+
+  const [curLegislatorDatas, setCurLegislatorDatas] = useState<Array<any>>([]);
+  const [curMemberDatas, setCurMemberDatas] = useState<Array<any>>([]);
+  const [curBillDatas, setCurBillDatas] = useState<Array<any>>([]);
+
+  const [progress, setProgress] = useState(10);
+  const [loading, setLoading] = useState(false);
+
+  // Show more button event in content
+  const handleLoadMore = () => {
+    setItemsToShow((prev) => prev + 6);
+  };
+
+  const getLegislatorData = async () => {
+    setLoading(true);
+    setProgress(0);
+    setCurLegislatorDatas([]);
+    setItemsToShow(6);
+
+    const incrementProgress = () => {
+      setProgress((prev) => (prev < 95 ? prev + Math.random() * 5 : prev));
+    };
+    const timer = setInterval(incrementProgress, 200);
+
+    try {
+      // Replace with your API call
+      const response = await axios.get(
+        `/api/local_legislators/?address=${curSearchLegislator}`
+      );
+
+      clearInterval(timer);
+      setProgress(100);
+
+      setTimeout(() => {
+        if (response.data.legislators && response.data.legislators.length > 0) {
+          setCurLegislatorDatas(response.data.legislators);
+        }
+        setLoading(false);
+      }, 300);
+    } catch (error) {
+      console.error("Error fetching legislator data: ", error);
+    }
+  };
+
+  const getMemberData = async () => {
+    setLoading(true);
+    setProgress(0);
+    setCurMemberDatas([]);
+    setItemsToShow(6);
+
+    const incrementProgress = () => {
+      setProgress((prev) => (prev < 95 ? prev + Math.random() * 5 : prev));
+    };
+    const timer = setInterval(incrementProgress, 200);
+
+    try {
+      // Replace with your API call
+      const response = await axios.get(
+        `/api/search_members/?search=${curSearchMember}`
+      );
+
+      clearInterval(timer);
+      setProgress(100);
+
+      setTimeout(() => {
+        if (response.data.members && response.data.members.length > 0) {
+          setCurMemberDatas(response.data.members);
+        }
+        setLoading(false);
+      }, 300);
+    } catch (error) {
+      console.error("Error fetching member data: ", error);
+    }
+  };
+
+  const getBillsData = async () => {
+    setLoading(true);
+    setProgress(0);
+    setCurBillDatas([]);
+    setItemsToShow(6);
+
+    const incrementProgress = () => {
+      setProgress((prev) => (prev < 95 ? prev + Math.random() * 5 : prev));
+    };
+    const timer = setInterval(incrementProgress, 200);
+
+    try {
+      // Replace with your API call
+      const response = await axios.get(
+        `/api/search_bills/?search=${curSearchBill}`
+      );
+
+      clearInterval(timer);
+      setProgress(100);
+
+      setTimeout(() => {
+        if (response.data && response.data.length > 0) {
+          setCurBillDatas(response.data);
+        }
+        setLoading(false);
+      }, 300);
+    } catch (error) {
+      console.error("Error fetching bill data: ", error);
+    }
+  };
+
+  const hanleLegislatorKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      handleUpdateData(1);
+    }
+  };
+
+  const hanleMemberKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      handleUpdateData(2);
+    }
+  };
+
+  const hanleBillKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      handleUpdateData(3);
+    }
+  };
+
+  const handleUpdateData = (type: number) => {
+    if (type === 1) {
+      setCurType(1);
+      getLegislatorData();
+    } else if (type === 2) {
+      setCurType(2);
+      getMemberData();
+    } else if (type === 3) {
+      setCurType(3);
+      getBillsData();
+    }
+  };
+
+  const handleLegislatorClick = (itemId: any) => {
+    navigate(`/member-detail/${itemId}`);
+    setCookie("prev-link", "home");
+  };
+
+  const handleMemberClick = (itemId: any) => {
+    navigate(`/member-detail/${itemId}`);
+    setCookie("prev-link", "home");
+  };
+
+  const handleBillClick = (itemId: any) => {
+    navigate(`/bill/${itemId}`);
+    setCookie("prev-link", "home");
+  };
+
+  const [autocomplete, setAutocomplete] =
+    useState<google.maps.places.Autocomplete | null>(null);
+
+  const onLoad = useCallback(
+    (autocompleteInstance: google.maps.places.Autocomplete) => {
+      setAutocomplete(autocompleteInstance);
+    },
+    []
+  );
+
+  const onPlaceChanged = useCallback(() => {
+    if (autocomplete !== null) {
+      const place = autocomplete.getPlace();
+      setCurSearchLegislator(place.formatted_address || "");
+    } else {
+      console.log("Autocomplete is not loaded yet!");
+    }
+  }, [autocomplete]);
+
+  return (
+    <div
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-20 bg-no-repeat bg-cover xs:px-32"
+      style={{ backgroundImage: `url("./images/homeback.png")` }}
+    >
+      {/* ...rest of your JSX code */}
+    </div>
+  );
+};
+
+export default Home;
