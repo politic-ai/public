@@ -1,0 +1,256 @@
+import axios from "axios";
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+
+import MemberInformation from "../components/member/MemberInformation";
+import MemberProfile from "../components/member/MemberProfile";
+import MemberDistrict from "../components/member/MemberDistrict";
+import MemberActivity from "../components/member/MemberActivity";
+import MemberScore from "../components/member/MemberScore";
+import MemberSponsor from "../components/member/MemberSponsor";
+import MemberPolitical from "../components/member/MemberPolitical";
+import MemberVoteHistory from "../components/member/MemberVoteHistory";
+
+const MemberDetail = () => {
+  const { member_id } = useParams();
+  // const API_ENDPOINT = process.env.REACT_APP_BACKEND_API_URL;
+
+  // Member Information
+  const [memberInforData, setMemberInforData] = useState<any>({});
+  const [memberInforSrc, setMemberInforSrc] = useState("");
+  const [memberSummaryData, setMemberSummaryData] = useState("");
+  const [memberSummarySrc, setMemberSummarySrc] = useState("");
+  const [memberPastRoleData, setMemberPastRoleData] = useState({});
+  const [memberCommitteeData, setMemberCommitteeData] = useState({});
+  // Member Profile
+  const [memberProfileData, setMemberProfileData] = useState<any>({
+    success: { data: "", src: "" },
+    cosponsore: { data: "", src: "" },
+    billsupport: { data: "", src: "" },
+    party: { data: "", src: "" },
+    policyfocus: { data: "", src: "" },
+    netimpact: { data: "", src: "" },
+  });
+  // Member District
+  const [memberDistrictData, setMemberDistrictData] = useState<any>({});
+  const [memberDistrictSrc, setMemberDistrictSrc] = useState("");
+  // Member Policy Area
+  const [memberPolicyData, setMemberPolicyData] = useState<any>({});
+  const [memberPolicySrc, setMemberPolicySrc] = useState("");
+  // Member Demographic Impact Scores
+  const [memberDemographicData, setMemberDemographicData] = useState<any>({});
+  const [memberDemographicSrc, setMemberDemographicSrc] = useState("");
+  // Sponsored Bills
+  const [memberSponsoreData, setMemberSponsoreData] = useState<Array<any>>([]);
+  const [memberSponsoreSrc, setMemberSponsoreSrc] = useState("");
+  // Political Allies
+  const [memberPoliticalData, setMemberPoliticalData] = useState<Array<any>>([]);
+  const [memberPoliticalSrc, setMemberPoliticalSrc] = useState("");
+  // Vote History
+  const [memberVoteData, setMemberVoteData] = useState<Array<any>>([]);
+  const [memberVoteSrc, setMemberVoteSrc] = useState("");
+
+  useEffect(() => {
+    getMemberInformation();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [member_id]);
+
+  const getMemberInformation = async () => {
+    try {
+      // Replace with your API call
+      const response = await axios.get(
+        `/api/members/congress/${member_id}`
+      );
+
+      if (response.data) {
+        const responseData = response.data;
+
+        // Member Information
+        if (
+          responseData?.member_info !== null &&
+          Object.keys(responseData?.member_info || {}).length !== 0
+        ) {
+          setMemberInforData(responseData?.member_info?.data);
+          setMemberInforSrc(responseData?.member_info?.src);
+        }
+        if (
+          responseData?.ai_summary !== null &&
+          Object.keys(responseData?.ai_summary || {}).length !== 0
+        ) {
+          setMemberSummaryData(responseData?.ai_summary?.data);
+          setMemberSummarySrc(responseData?.ai_summary?.src);
+        }
+        if (
+          responseData?.past_roles !== null &&
+          Object.keys(responseData?.past_roles || {}).length !== 0
+        ) {
+          setMemberPastRoleData(responseData?.past_roles);
+        }
+        if (
+          responseData?.committees !== null &&
+          Object.keys(responseData?.committees || {}).length !== 0
+        ) {
+          setMemberCommitteeData(responseData?.committees);
+        }
+        // Member Profile
+        let profileData = {
+          success: { data: "", src: "" },
+          cosponsore: { data: "", src: "" },
+          billsupport: { data: "", src: "" },
+          party: { data: "", src: "" },
+          policyfocus: { data: "", src: "" },
+          netimpact: { data: "", src: "" },
+        };
+        if (
+          responseData?.bill_success_rate !== null &&
+          Object.keys(responseData?.bill_success_rate || {}).length !== 0
+        ) {
+          profileData.success.data = parseFloat(
+            responseData?.bill_success_rate?.data
+          ).toFixed(2);
+          profileData.success.src = responseData?.bill_success_rate?.src;
+        }
+        if (
+          responseData?.member_info !== null &&
+          Object.keys(responseData?.member_info?.data || {}).length !== 0
+        ) {
+          profileData.cosponsore.data =
+            responseData?.member_info?.data?.cosponsored_bills_count;
+          profileData.cosponsore.src = responseData?.member_info?.src || "";
+        }
+        if (
+          responseData?.avg_bill_support !== null &&
+          Object.keys(responseData?.avg_bill_support || {}).length !== 0
+        ) {
+          profileData.billsupport.data = parseFloat(
+            responseData?.avg_bill_support?.data
+          ).toFixed(2);
+          profileData.billsupport.src = responseData?.avg_bill_support?.src;
+        }
+        if (
+          responseData?.member_info !== null &&
+          Object.keys(responseData?.member_info || {}).length !== 0
+        ) {
+          profileData.party.data = responseData?.member_info?.data?.party;
+          profileData.party.src = responseData?.member_info?.src;
+        }
+        if (
+          responseData?.policy_area_focus !== null &&
+          Object.keys(responseData?.policy_area_focus || {}).length !== 0
+        ) {
+          profileData.policyfocus.data = responseData?.policy_area_focus?.data;
+          profileData.policyfocus.src = responseData?.policy_area_focus?.src;
+        }
+        if (
+          responseData?.net_impact_score !== null &&
+          Object.keys(responseData?.net_impact_score || {}).length !== 0
+        ) {
+          profileData.netimpact.data = responseData?.net_impact_score?.data;
+          profileData.netimpact.src = responseData?.net_impact_score?.src;
+        }
+        setMemberProfileData(profileData);
+        // Member District
+        if (
+          responseData?.district_state_info !== null &&
+          Object.keys(responseData?.district_state_info || {}).length !== 0
+        ) {
+          setMemberDistrictData(responseData?.district_state_info?.data);
+          setMemberDistrictSrc(responseData?.district_state_info?.src);
+        }
+        // Member Policy Area
+        if (
+          responseData?.policy_area_activity !== null &&
+          Object.keys(responseData?.policy_area_activity || {}).length !== 0
+        ) {
+          setMemberPolicyData(responseData?.policy_area_activity?.data);
+          setMemberPolicySrc(responseData?.policy_area_activity?.src);
+        }
+        // Member Demographic Impact Scores
+        if (
+          responseData?.demo_impact !== null &&
+          Object.keys(responseData?.demo_impact || {}).length !== 0
+        ) {
+          setMemberDemographicData(responseData?.demo_impact?.data);
+          setMemberDemographicSrc(responseData?.demo_impact?.src);
+        }
+        // Sponsored Bills
+        if (
+          responseData?.sponsored_bills !== null &&
+          Object.keys(responseData?.sponsored_bills || {}).length !== 0
+        ) {
+          setMemberSponsoreData(responseData?.sponsored_bills?.data);
+          setMemberSponsoreSrc(responseData?.sponsored_bills?.src);
+        }
+        // Political Allies
+        if (
+          responseData?.political_allies !== null &&
+          Object.keys(responseData?.political_allies || {}).length !== 0
+        ) {
+          setMemberPoliticalData(responseData?.political_allies?.data);
+          setMemberPoliticalSrc(responseData?.political_allies?.src);
+        }
+        // Vote History
+        if (
+          responseData?.vote_history !== null &&
+          Object.keys(responseData?.vote_history || {}).length !== 0
+        ) {
+          setMemberVoteData(responseData?.vote_history?.data);
+          setMemberVoteSrc(responseData?.vote_history?.src);
+        }
+      }
+    } catch (error) {
+      console.error("Error getting the member detail data: ", error);
+    }
+  };
+
+  return (
+    <div className="bg-white pt-[50px] pb-[120px] px-[40px] sm:px-[60px] xl:px-[100px]">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Section */}
+        <div className="flex flex-col gap-6 w-full lg:w-1/4">
+          <MemberInformation
+            memberInforData={memberInforData}
+            memberInforSrc={memberInforSrc}
+            memberSummaryData={memberSummaryData}
+            memberSummarySrc={memberSummarySrc}
+            memberPastRoleData={memberPastRoleData}
+            memberCommitteeData={memberCommitteeData}
+          />
+        </div>
+
+        {/* Right Section */}
+        <div className="flex flex-col gap-[35px] w-full lg:w-3/4">
+          <MemberProfile memberProfileData={memberProfileData} />
+          <MemberDistrict
+            memberDistrictData={memberDistrictData}
+            memberDistrictSrc={memberDistrictSrc}
+          />
+          <MemberActivity
+            memberPolicyData={memberPolicyData}
+            memberPolicySrc={memberPolicySrc}
+          />
+          <MemberScore
+            memberDemographicData={memberDemographicData}
+            memberDemographicSrc={memberDemographicSrc}
+          />
+          <MemberSponsor
+            memberSponsoreData={memberSponsoreData}
+            memberSponsoreSrc={memberSponsoreSrc}
+          />
+          <MemberPolitical
+            memberPoliticalData={memberPoliticalData}
+            memberPoliticalSrc={memberPoliticalSrc}
+          />
+          <MemberVoteHistory
+            memberVoteData={memberVoteData}
+            memberVoteSrc={memberVoteSrc}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MemberDetail;
